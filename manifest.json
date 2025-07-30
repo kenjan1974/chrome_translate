@@ -1,0 +1,24 @@
+{
+  "manifest_version": 3,
+  "name": "文字轉換小幫手",
+  "version": "1.0",
+  "description": "快速進行繁簡、中英互換，並支援 OpenAI API",
+  "permissions": ["storage"],
+  "host_permissions": ["https://api.openai.com/*"],
+  "content_scripts": [
+    {
+      "matches": ["<all_urls>"],
+      "js": ["content.js"],
+      "run_at": "document_end"
+    }
+  ],
+  "action": {
+    "default_popup": "popup.html",
+    "default_icon": {
+      "16": "icons/icon16.png",
+      "48": "icons/icon48.png",
+      "128": "icons/icon128.png"
+    }
+  },
+  "options_page": "options.html"
+}

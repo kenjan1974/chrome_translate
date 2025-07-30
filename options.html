@@ -1,0 +1,239 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>文字轉換小幫手 - 設定</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        
+        h1 {
+            color: #333;
+            margin-bottom: 20px;
+        }
+        
+        .form-group {
+            margin-bottom: 20px;
+        }
+        
+        label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: bold;
+            color: #555;
+        }
+        
+        input[type="text"],
+        input[type="password"] {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 14px;
+            box-sizing: border-box;
+        }
+        
+        .password-input-group {
+            position: relative;
+            display: flex;
+            align-items: center;
+        }
+        
+        .password-input-group input {
+            flex: 1;
+            padding-right: 45px;
+        }
+        
+        .toggle-password {
+            position: absolute;
+            right: 10px;
+            background: none;
+            border: none;
+            cursor: pointer;
+            font-size: 16px;
+            padding: 5px;
+            color: #666;
+            user-select: none;
+        }
+        
+        .toggle-password:hover {
+            color: #333;
+        }
+        
+        button {
+            background: #4CAF50;
+            color: white;
+            padding: 12px 24px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+            margin-right: 10px;
+        }
+        
+        button:hover {
+            background: #45a049;
+        }
+        
+        #reset {
+            background: #6c757d;
+        }
+        
+        #reset:hover {
+            background: #5a6268;
+        }
+        
+        .shortcut-settings {
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            padding: 15px;
+            background: #f9f9f9;
+        }
+        
+        .shortcut-item {
+            display: flex;
+            align-items: center;
+            margin-bottom: 10px;
+            gap: 10px;
+        }
+        
+        .shortcut-item label {
+            flex: 1;
+            margin-bottom: 0;
+            font-weight: normal;
+            font-size: 14px;
+        }
+        
+        .shortcut-input {
+            width: 120px;
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 12px;
+            text-align: center;
+            background: #fff;
+        }
+        
+        .shortcut-input.recording {
+            background: #fff3cd;
+            border-color: #ffeaa7;
+        }
+        
+        .change-shortcut {
+            padding: 6px 12px;
+            font-size: 12px;
+            background: #007bff;
+            border: none;
+            border-radius: 3px;
+            color: white;
+            cursor: pointer;
+            white-space: nowrap;
+        }
+        
+        .change-shortcut:hover {
+            background: #0056b3;
+        }
+        
+        .change-shortcut.recording {
+            background: #ffc107;
+            color: #212529;
+        }
+        
+        .shortcut-help {
+            margin-top: 10px;
+            color: #666;
+        }
+        
+        .info {
+            background: #e7f3ff;
+            border: 1px solid #b3d9ff;
+            padding: 15px;
+            border-radius: 4px;
+            margin-bottom: 20px;
+        }
+        
+        .info h3 {
+            margin-top: 0;
+            color: #0066cc;
+        }
+        
+        .info ul {
+            margin: 10px 0;
+            padding-left: 20px;
+        }
+        
+        .info li {
+            margin-bottom: 5px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>文字轉換小幫手 - 設定</h1>
+        
+        <div class="info">
+            <h3>如何取得 OpenAI API Key：</h3>
+            <ul>
+                <li>前往 <a href="https://platform.openai.com/api-keys" target="_blank">OpenAI API Keys 頁面</a></li>
+                <li>登入或註冊 OpenAI 帳號</li>
+                <li>點擊 "Create new secret key" 建立新的 API Key</li>
+                <li>複製產生的 API Key 並貼上到下方欄位</li>
+            </ul>
+        </div>
+        
+        <div class="form-group">
+            <label for="apiKey">OpenAI API Key：</label>
+            <div class="password-input-group">
+                <input type="password" id="apiKey" placeholder="sk-..." />
+                <button type="button" id="toggleApiKey" class="toggle-password">👁️</button>
+            </div>
+        </div>
+        
+        <div class="form-group">
+            <label>快速鍵設定：</label>
+            <div class="shortcut-settings">
+                <div class="shortcut-item">
+                    <label for="shortcut1">轉換為簡體中文：</label>
+                    <input type="text" id="shortcut1" class="shortcut-input" placeholder="Alt+1" readonly />
+                    <button type="button" class="change-shortcut" data-target="shortcut1">修改</button>
+                </div>
+                <div class="shortcut-item">
+                    <label for="shortcut2">轉換為繁體中文：</label>
+                    <input type="text" id="shortcut2" class="shortcut-input" placeholder="Alt+2" readonly />
+                    <button type="button" class="change-shortcut" data-target="shortcut2">修改</button>
+                </div>
+                <div class="shortcut-item">
+                    <label for="shortcut3">中文翻譯為英文：</label>
+                    <input type="text" id="shortcut3" class="shortcut-input" placeholder="Alt+3" readonly />
+                    <button type="button" class="change-shortcut" data-target="shortcut3">修改</button>
+                </div>
+                <div class="shortcut-item">
+                    <label for="shortcut4">英文翻譯為中文：</label>
+                    <input type="text" id="shortcut4" class="shortcut-input" placeholder="Alt+4" readonly />
+                    <button type="button" class="change-shortcut" data-target="shortcut4">修改</button>
+                </div>
+            </div>
+            <div class="shortcut-help">
+                <small>點擊「修改」按鈕後，按下想要設定的快速鍵組合</small>
+            </div>
+        </div>
+        
+        <button id="save">儲存設定</button>
+        <button type="button" id="reset">重設為預設值</button>
+    </div>
+    
+    <script src="options.js"></script>
+</body>
+</html>
