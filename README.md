@@ -1,4 +1,8 @@
-# 文字轉換小幫手 Chrome 擴充功能
+# 文字轉換小幫手- 🌍 支援中文 ↔ 英文翻譯
+- ⚡ 快速鍵操作，提升工作效率
+- 🎨 **自訂快速鍵**：可自由設定快速鍵組合
+- 🤖 使用 OpenAI o4-mini 模型提供高品質翻譯
+- 💾 本地儲存 API Key，確保安全性me 擴充功能
 
 一個功能強大的 Chrome 擴充功能，可以在**任何網頁的任何輸入框**中快速進行繁體中文、簡體中文與英文之間的轉換翻譯。
 
@@ -93,7 +97,7 @@ Chrome-translate/
 
 - **Manifest Version**: 3 (Chrome Extensions Manifest V3)
 - **Content Scripts**: 注入到所有網頁，監聽快速鍵
-- **API**: OpenAI GPT-3.5-turbo
+- **API**: OpenAI o4-mini
 - **權限**: 
   - `storage`: 用於本地儲存 API Key
   - `host_permissions`: 允許存取 OpenAI API
@@ -173,6 +177,11 @@ A: 某些網站可能有特殊的安全政策，請嘗試：
 3. 在擴充功能管理頁面檢查錯誤報告
 
 ## 🔄 版本紀錄
+
+### v1.3
+- ✅ 升級至 OpenAI o4-mini 模型
+- ✅ 提升翻譯品質和準確度
+- ✅ 更好的語言理解能力
 
 ### v1.2
 - ✅ **新功能**：自訂快速鍵設定

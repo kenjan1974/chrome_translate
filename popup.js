@@ -80,7 +80,7 @@ async function testApiKey() {
         "Authorization": `Bearer ${apiKey}`,
       },
       body: JSON.stringify({
-        model: "gpt-3.5-turbo",
+        model: "o4-mini",
         messages: [
           { role: "user", content: "請回應：測試成功" }
         ],

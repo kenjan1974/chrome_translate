@@ -90,7 +90,7 @@ async function translateText(text, prefix) {
         "Authorization": `Bearer ${apiKey}`,
       },
       body: JSON.stringify({
-        model: "gpt-3.5-turbo",
+        model: "o4-mini",
         messages: [
           {
             role: "system",
