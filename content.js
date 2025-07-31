@@ -35,7 +35,7 @@ function isEditableElement(element) {
   const type = element.type ? element.type.toLowerCase() : '';
   
   // 支援的輸入類型
-  const supportedInputTypes = ['text', 'email', 'password', 'search', 'tel', 'url'];
+  const supportedInputTypes = ['text', 'email', 'search', 'tel', 'url'];
   
   return (
     // textarea 元素
