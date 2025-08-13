@@ -1,5 +1,6 @@
 let apiKey;
 let customShortcuts = {};
+let isApiKeyReady = false; // 新增準備狀態標記
 
 // 預設快速鍵設定
 const defaultShortcuts = {
@@ -9,10 +10,19 @@ const defaultShortcuts = {
   shortcut4: { key: "4", altKey: true, ctrlKey: false, shiftKey: false, description: "英文翻譯為中文" }
 };
 
-// 載入 API Key 和快速鍵設定
+// 預載入常用的翻譯前綴
+const translationPrefixes = {
+  "轉換為簡體中文": "請將以下繁體中文轉換為簡體中文，只需要回覆轉換後的結果：",
+  "轉換為繁體中文": "請將以下簡體中文轉換為繁體中文，只需要回覆轉換後的結果：",
+  "中文翻譯為英文": "請將以下中文翻譯為英文，只需要回覆翻譯結果：",
+  "英文翻譯為中文": "請將以下英文翻譯為中文，只需要回覆翻譯結果："
+};
+
+// 啟動時預載入設定
 chrome.storage.local.get(["openaiApiKey", "customShortcuts"], (res) => {
   apiKey = res.openaiApiKey;
   customShortcuts = res.customShortcuts || defaultShortcuts;
+  isApiKeyReady = !!apiKey; // 標記 API Key 是否就緒
 });
 
 // 監聽 storage 變化，即時更新設定
@@ -80,37 +90,69 @@ function showProcessingStatus(element, originalText) {
   return () => setElementText(element, originalText);
 }
 
-// 呼叫 OpenAI API 進行翻譯
+// 建立持續連線的 fetch 配置
+const fetchConfig = {
+  method: "POST",
+  headers: {
+    "Content-Type": "application/json",
+    "Connection": "keep-alive", // 保持連線
+  },
+  keepalive: true // 保持連線活躍
+};
+
+// 修改翻譯函式，快速檢查 API Key
 async function translateText(text, prefix) {
-  try {
-    const response = await fetch("https://api.openai.com/v1/chat/completions", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "Authorization": `Bearer ${apiKey}`,
-      },
-      body: JSON.stringify({
-        model: "o4-mini",
-        messages: [
-          {
-            role: "system",
-            content: "你是一個翻譯助理，只回傳轉換後的文字，不要多餘說明。",
-          },
-          { role: "user", content: prefix + text },
-        ],
-      }),
-    });
-
-    if (!response.ok) {
-      throw new Error(`API 請求失敗: ${response.status}`);
-    }
-
-    const data = await response.json();
-    return data.choices[0].message.content.trim();
-  } catch (error) {
-    console.error("翻譯失敗:", error);
-    throw error;
+  if (!isApiKeyReady || !apiKey) {
+    throw new Error("API Key 未設定");
   }
+
+  const response = await fetch("https://api.openai.com/v1/chat/completions", {
+    ...fetchConfig,
+    headers: {
+      ...fetchConfig.headers,
+      "Authorization": `Bearer ${apiKey}`,
+    },
+    body: JSON.stringify({
+      model: "gpt-4o",
+      messages: [{ role: "user", content: `${prefix}${text}` }],
+      max_tokens: 300,
+      temperature: 0.1,
+      stream: false // 確保不使用串流模式
+    }),
+  });
+
+  if (!response.ok) {
+    const error = await response.json();
+    throw new Error(error.error?.message || "翻譯失敗");
+  }
+
+  const data = await response.json();
+  return data.choices[0].message.content;
+}
+
+// 新增快取系統
+const translationCache = new Map();
+const CACHE_SIZE = 100; // 限制快取大小
+
+async function translateWithCache(text, prefix) {
+  const cacheKey = `${prefix}:${text}`;
+  
+  // 檢查快取
+  if (translationCache.has(cacheKey)) {
+    return translationCache.get(cacheKey);
+  }
+  
+  // 呼叫 API
+  const result = await translateText(text, prefix);
+  
+  // 儲存到快取（限制大小）
+  if (translationCache.size >= CACHE_SIZE) {
+    const firstKey = translationCache.keys().next().value;
+    translationCache.delete(firstKey);
+  }
+  translationCache.set(cacheKey, result);
+  
+  return result;
 }
 
 // 檢查按鍵事件是否符合快速鍵設定
@@ -122,66 +164,50 @@ function matchesShortcut(event, shortcut) {
 }
 
 // 根據快速鍵獲取對應的翻譯指令
-function getTranslationPrefix(event) {
-  for (const [shortcutId, shortcut] of Object.entries(customShortcuts)) {
-    if (matchesShortcut(event, shortcut)) {
-      switch (shortcutId) {
-        case 'shortcut1':
-          return "將以下文字轉換為簡體中文：";
-        case 'shortcut2':
-          return "將以下文字轉換為繁體中文：";
-        case 'shortcut3':
-          return "將以下中文翻譯為英文：";
-        case 'shortcut4':
-          return "將以下英文翻譯為中文：";
-      }
-    }
-  }
-  return null;
+function getTranslationPrefix(description) {
+  return translationPrefixes[description] || `請處理以下文字：`;
 }
 
 // 主要的快速鍵處理函式
 async function handleKeyDown(e) {
-  // 檢查當前聚焦的元素是否為可編輯的輸入欄位
-  const activeElement = document.activeElement;
-  if (!isEditableElement(activeElement)) return;
-  
-  // 檢查是否符合任何設定的快速鍵
-  const prefix = getTranslationPrefix(e);
-  if (!prefix) return;
+  // 快速檢查快速鍵匹配
+  const matchedShortcut = Object.values(customShortcuts).find(shortcut =>
+    e.key.toLowerCase() === shortcut.key.toLowerCase() &&
+    e.altKey === shortcut.altKey &&
+    e.ctrlKey === shortcut.ctrlKey &&
+    e.shiftKey === shortcut.shiftKey
+  );
 
-  // 阻止預設行為
+  if (!matchedShortcut) return;
+
   e.preventDefault();
   e.stopPropagation();
 
+  const activeElement = document.activeElement;
+  if (!isEditableElement(activeElement)) return;
+
   const originalText = getElementText(activeElement);
-  
-  // 檢查是否有文字內容
-  if (!originalText.trim()) {
-    alert("請先輸入要轉換的文字");
-    return;
-  }
+  if (!originalText.trim()) return;
 
-  // 檢查是否有 API Key
-  if (!apiKey) {
-    alert("請先在擴充功能設定頁面輸入 OpenAI API Key");
-    return;
-  }
-
-  // 顯示處理狀態
-  const restoreOriginal = showProcessingStatus(activeElement, originalText);
+  // 立即顯示載入狀態
+  const loadingText = "🔄 翻譯中...";
+  setElementText(activeElement, loadingText);
 
   try {
-    // 進行翻譯
-    const translatedText = await translateText(originalText, prefix);
+    // 使用快取版本的翻譯函式
+    const translatedText = await translateWithCache(originalText, getTranslationPrefix(matchedShortcut.description));
     setElementText(activeElement, translatedText);
-    
-    // 保持焦點在原元素上
-    activeElement.focus();
   } catch (error) {
-    // 發生錯誤時還原原始文字
-    restoreOriginal();
-    alert("轉換失敗，請檢查 API Key 與網路連線");
+    // 錯誤時恢復原文
+    setElementText(activeElement, originalText);
+    console.error("翻譯錯誤:", error);
+    
+    // 短暫顯示錯誤訊息
+    const errorText = "❌ 翻譯失敗";
+    setElementText(activeElement, errorText);
+    setTimeout(() => {
+      setElementText(activeElement, originalText);
+    }, 2000);
   }
 }
 
