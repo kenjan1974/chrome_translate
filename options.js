@@ -8,8 +8,13 @@ const defaultShortcuts = {
   shortcut1: { key: "1", altKey: true, ctrlKey: false, shiftKey: false, description: "轉換為簡體中文" },
   shortcut2: { key: "2", altKey: true, ctrlKey: false, shiftKey: false, description: "轉換為繁體中文" },
   shortcut3: { key: "3", altKey: true, ctrlKey: false, shiftKey: false, description: "中文翻譯為英文" },
-  shortcut4: { key: "4", altKey: true, ctrlKey: false, shiftKey: false, description: "英文翻譯為中文" }
+  shortcut4: { key: "4", altKey: true, ctrlKey: false, shiftKey: false, description: "英文翻譯為中文" },
+  shortcut5: { key: "5", altKey: true, ctrlKey: false, shiftKey: false, description: "中文站名轉日文漢字" },
+  shortcut6: { key: "6", altKey: true, ctrlKey: false, shiftKey: false, description: "中文站名轉日文平假名" },
+  shortcut7: { key: "7", altKey: true, ctrlKey: false, shiftKey: false, description: "中文站名轉英文站名" }
 };
+
+const shortcutIds = Object.keys(defaultShortcuts);
 
 let currentRecording = null;
 
@@ -25,9 +30,20 @@ function toggleApiKeyVisibility() {
 chrome.storage.local.get(["openaiApiKey", "customShortcuts"], (res) => {
   if (res.openaiApiKey) input.value = res.openaiApiKey;
   
-  const shortcuts = res.customShortcuts || defaultShortcuts;
+  const shortcuts = normalizeShortcuts(res.customShortcuts);
   loadShortcutSettings(shortcuts);
 });
+
+function normalizeShortcuts(shortcuts) {
+  return shortcutIds.reduce((result, id) => {
+    result[id] = {
+      ...defaultShortcuts[id],
+      ...(shortcuts?.[id] || {}),
+      description: defaultShortcuts[id].description
+    };
+    return result;
+  }, {});
+}
 
 // 載入快速鍵設定到介面
 function loadShortcutSettings(shortcuts) {
@@ -94,7 +110,7 @@ function isDuplicateShortcut(newShortcut, excludeId) {
 // 獲取目前所有快速鍵設定
 function getCurrentShortcuts() {
   const shortcuts = {};
-  ['shortcut1', 'shortcut2', 'shortcut3', 'shortcut4'].forEach(id => {
+  shortcutIds.forEach(id => {
     const inputElement = document.getElementById(id);
     const value = inputElement.value;
     if (value && value !== inputElement.placeholder) {
@@ -194,7 +210,7 @@ saveBtn.addEventListener("click", () => {
   
   // 收集快速鍵設定
   const shortcuts = {};
-  ['shortcut1', 'shortcut2', 'shortcut3', 'shortcut4'].forEach(id => {
+  shortcutIds.forEach(id => {
     const inputElement = document.getElementById(id);
     const value = inputElement.value;
     

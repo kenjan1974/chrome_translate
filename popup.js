@@ -6,16 +6,32 @@ const defaultShortcuts = {
   shortcut1: { key: "1", altKey: true, ctrlKey: false, shiftKey: false, description: "轉換為簡體中文" },
   shortcut2: { key: "2", altKey: true, ctrlKey: false, shiftKey: false, description: "轉換為繁體中文" },
   shortcut3: { key: "3", altKey: true, ctrlKey: false, shiftKey: false, description: "中文翻譯為英文" },
-  shortcut4: { key: "4", altKey: true, ctrlKey: false, shiftKey: false, description: "英文翻譯為中文" }
+  shortcut4: { key: "4", altKey: true, ctrlKey: false, shiftKey: false, description: "英文翻譯為中文" },
+  shortcut5: { key: "5", altKey: true, ctrlKey: false, shiftKey: false, description: "中文站名轉日文漢字" },
+  shortcut6: { key: "6", altKey: true, ctrlKey: false, shiftKey: false, description: "中文站名轉日文平假名" },
+  shortcut7: { key: "7", altKey: true, ctrlKey: false, shiftKey: false, description: "中文站名轉英文站名" }
 };
+
+const shortcutIds = Object.keys(defaultShortcuts);
 
 // 載入 API Key 狀態和快速鍵設定
 chrome.storage.local.get(["openaiApiKey", "customShortcuts"], (res) => {
   apiKey = res.openaiApiKey;
-  customShortcuts = res.customShortcuts || defaultShortcuts;
+  customShortcuts = normalizeShortcuts(res.customShortcuts);
   updateApiKeyStatus();
   updateShortcutDisplay();
 });
+
+function normalizeShortcuts(shortcuts) {
+  return shortcutIds.reduce((result, id) => {
+    result[id] = {
+      ...defaultShortcuts[id],
+      ...(shortcuts?.[id] || {}),
+      description: defaultShortcuts[id].description
+    };
+    return result;
+  }, {});
+}
 
 // 格式化快速鍵顯示
 function formatShortcutDisplay(shortcut) {
@@ -33,7 +49,10 @@ function updateShortcutDisplay() {
     'shortcut1': document.querySelector('[data-shortcut="1"]'),
     'shortcut2': document.querySelector('[data-shortcut="2"]'),
     'shortcut3': document.querySelector('[data-shortcut="3"]'),
-    'shortcut4': document.querySelector('[data-shortcut="4"]')
+    'shortcut4': document.querySelector('[data-shortcut="4"]'),
+    'shortcut5': document.querySelector('[data-shortcut="5"]'),
+    'shortcut6': document.querySelector('[data-shortcut="6"]'),
+    'shortcut7': document.querySelector('[data-shortcut="7"]')
   };
 
   Object.keys(shortcutElements).forEach(id => {
@@ -84,7 +103,7 @@ async function testApiKey() {
         messages: [
           { role: "user", content: "請回應：測試成功" }
         ],
-        max_tokens: 10
+        max_completion_tokens: 10
       }),
     });
 
@@ -115,7 +134,7 @@ chrome.storage.onChanged.addListener((changes, namespace) => {
       updateApiKeyStatus();
     }
     if (changes.customShortcuts) {
-      customShortcuts = changes.customShortcuts.newValue || defaultShortcuts;
+      customShortcuts = normalizeShortcuts(changes.customShortcuts.newValue);
       updateShortcutDisplay();
     }
   }

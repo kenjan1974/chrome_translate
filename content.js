@@ -7,7 +7,10 @@ const defaultShortcuts = {
   shortcut1: { key: "1", altKey: true, ctrlKey: false, shiftKey: false, description: "轉換為簡體中文" },
   shortcut2: { key: "2", altKey: true, ctrlKey: false, shiftKey: false, description: "轉換為繁體中文" },
   shortcut3: { key: "3", altKey: true, ctrlKey: false, shiftKey: false, description: "中文翻譯為英文" },
-  shortcut4: { key: "4", altKey: true, ctrlKey: false, shiftKey: false, description: "英文翻譯為中文" }
+  shortcut4: { key: "4", altKey: true, ctrlKey: false, shiftKey: false, description: "英文翻譯為中文" },
+  shortcut5: { key: "5", altKey: true, ctrlKey: false, shiftKey: false, description: "中文站名轉日文漢字" },
+  shortcut6: { key: "6", altKey: true, ctrlKey: false, shiftKey: false, description: "中文站名轉日文平假名" },
+  shortcut7: { key: "7", altKey: true, ctrlKey: false, shiftKey: false, description: "中文站名轉英文站名" }
 };
 
 // 預載入常用的翻譯前綴
@@ -15,13 +18,43 @@ const translationPrefixes = {
   "轉換為簡體中文": "請將以下繁體中文轉換為簡體中文，只需要回覆轉換後的結果：",
   "轉換為繁體中文": "請將以下簡體中文轉換為繁體中文，只需要回覆轉換後的結果：",
   "中文翻譯為英文": "請將以下中文翻譯為英文，只需要回覆翻譯結果：",
-  "英文翻譯為中文": "請將以下英文翻譯為中文，只需要回覆翻譯結果："
+  "英文翻譯為中文": "請將以下英文翻譯為中文，只需要回覆翻譯結果：",
+  "中文站名轉日文漢字": "請將以下中文日本鐵路站名轉換為日本實際使用的日文漢字站名。若輸入包含多個站名，請逐一轉換並保留原本分隔格式。只需要回覆站名結果，不要解釋：",
+  "中文站名轉日文平假名": "請將以下中文日本鐵路站名轉換為日本實際使用站名的平假名讀音。若輸入包含多個站名，請逐一轉換並保留原本分隔格式。只需要回覆平假名結果，不要解釋：",
+  "中文站名轉英文站名": "請將以下中文日本鐵路站名轉換為日本鐵路常用的英文站名羅馬字。若輸入包含多個站名，請逐一轉換並保留原本分隔格式。只需要回覆英文站名結果，不要解釋："
 };
+
+function normalizeShortcut(id, shortcut) {
+  const fallback = defaultShortcuts[id];
+  if (!fallback) return null;
+
+  return {
+    ...fallback,
+    ...(shortcut || {}),
+    key: typeof shortcut?.key === 'string' && shortcut.key
+      ? shortcut.key
+      : fallback.key,
+    altKey: typeof shortcut?.altKey === 'boolean' ? shortcut.altKey : fallback.altKey,
+    ctrlKey: typeof shortcut?.ctrlKey === 'boolean' ? shortcut.ctrlKey : fallback.ctrlKey,
+    shiftKey: typeof shortcut?.shiftKey === 'boolean' ? shortcut.shiftKey : fallback.shiftKey,
+    description: typeof shortcut?.description === 'string' && shortcut.description
+      ? shortcut.description
+      : fallback.description
+  };
+}
+
+function normalizeShortcuts(shortcuts) {
+  return Object.keys(defaultShortcuts).reduce((result, id) => {
+    const normalized = normalizeShortcut(id, shortcuts?.[id]);
+    if (normalized) result[id] = normalized;
+    return result;
+  }, {});
+}
 
 // 啟動時預載入設定
 chrome.storage.local.get(["openaiApiKey", "customShortcuts"], (res) => {
   apiKey = res.openaiApiKey;
-  customShortcuts = res.customShortcuts || defaultShortcuts;
+  customShortcuts = normalizeShortcuts(res.customShortcuts);
   isApiKeyReady = !!apiKey; // 標記 API Key 是否就緒
 });
 
@@ -32,7 +65,7 @@ chrome.storage.onChanged.addListener((changes, namespace) => {
       apiKey = changes.openaiApiKey.newValue;
     }
     if (changes.customShortcuts) {
-      customShortcuts = changes.customShortcuts.newValue || defaultShortcuts;
+      customShortcuts = normalizeShortcuts(changes.customShortcuts.newValue);
     }
   }
 });
@@ -113,10 +146,9 @@ async function translateText(text, prefix) {
       "Authorization": `Bearer ${apiKey}`,
     },
     body: JSON.stringify({
-      model: "gpt-4o",
+      model: "o4-mini",
       messages: [{ role: "user", content: `${prefix}${text}` }],
-      max_tokens: 300,
-      temperature: 0.1,
+      max_completion_tokens: 300,
       stream: false // 確保不使用串流模式
     }),
   });
@@ -157,6 +189,10 @@ async function translateWithCache(text, prefix) {
 
 // 檢查按鍵事件是否符合快速鍵設定
 function matchesShortcut(event, shortcut) {
+  if (typeof event.key !== 'string' || typeof shortcut?.key !== 'string') {
+    return false;
+  }
+
   return event.key.toLowerCase() === shortcut.key.toLowerCase() &&
          event.altKey === shortcut.altKey &&
          event.ctrlKey === shortcut.ctrlKey &&
@@ -171,12 +207,7 @@ function getTranslationPrefix(description) {
 // 主要的快速鍵處理函式
 async function handleKeyDown(e) {
   // 快速檢查快速鍵匹配
-  const matchedShortcut = Object.values(customShortcuts).find(shortcut =>
-    e.key.toLowerCase() === shortcut.key.toLowerCase() &&
-    e.altKey === shortcut.altKey &&
-    e.ctrlKey === shortcut.ctrlKey &&
-    e.shiftKey === shortcut.shiftKey
-  );
+  const matchedShortcut = Object.values(customShortcuts).find(shortcut => matchesShortcut(e, shortcut));
 
   if (!matchedShortcut) return;
 
@@ -236,4 +267,4 @@ style.textContent = `
 `;
 document.head.appendChild(style);
 
-console.log('文字轉換小幫手已載入 - 在任何文字輸入框中使用 Alt+1~4 快速鍵');
+console.log('文字轉換小幫手已載入 - 在任何文字輸入框中使用 Alt+1~7 快速鍵');
